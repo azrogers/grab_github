@@ -163,7 +163,7 @@ impl SourceTree {
             .children
             .iter()
             .filter(predicate)
-            .map(|c| c.clone())
+            .map(|c| c.prune(predicate))
             .collect();
 
         SourceTree {
