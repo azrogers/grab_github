@@ -1,7 +1,14 @@
 [package]
 name = "grab_github"
+description = "Obtain a list of files from a GitHub repository and download them to a folder using the GitHub API."
+authors = ["Ashley Rogers <ashley@anime.lgbt>"]
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/azrogers/grab_github"
+keywords = ["git", "download", "github"]
+categories = ["api-bindings"]
 
 [dependencies]
 futures = "0.3.30"

@@ -23,8 +23,13 @@ pub enum DownloadEvent<'p> {
 
 /// Implement this trait to receive events on the status of each upload.
 pub trait DownloadReporter: Sync {
-    fn on_event<'p>(&'p self, event: DownloadEvent<'p>) -> ();
+    fn on_event<'p>(&'p self, _event: DownloadEvent<'p>) -> () {}
 }
+
+/// An empty download reporter that does nothing
+pub struct NullDownloadReporter {}
+
+impl DownloadReporter for NullDownloadReporter {}
 
 const DEFAULT_MAX_DOWNLOADS: usize = 5;
 
@@ -83,6 +88,9 @@ where
         }
     }
 }
+
+/// A convenience type for a download config with no reporter.
+pub type DownloadConfigNoReporting<'download> = DownloadConfig<'download, NullDownloadReporter>;
 
 pub struct Downloader {}
 
