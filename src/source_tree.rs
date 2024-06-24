@@ -150,10 +150,31 @@ impl SourceTree {
         return None;
     }
 
+    /// Creates a SourceTreeIterator that will walk down this tree and return a pointer for each node found.
     pub fn iter<'tree>(&'tree self) -> SourceTreeIterator<'tree> {
         let mut list = LinkedList::new();
         list.push_back((self, -1));
         SourceTreeIterator(list)
+    }
+
+    /// Creates a new [SourceTree] from this tree, only including child nodes where `f` returns true.`
+    pub fn prune(&self, predicate: for<'a> fn(&'a &SourceTree) -> bool) -> SourceTree {
+        let new_children: Vec<SourceTree> = self
+            .children
+            .iter()
+            .filter(predicate)
+            .map(|c| c.clone())
+            .collect();
+
+        SourceTree {
+            path: self.path.clone(),
+            mode: self.mode.clone(),
+            sha: self.sha.clone(),
+            entry_type: self.entry_type.clone(),
+            size: self.size,
+            url: self.url.clone(),
+            children: new_children,
+        }
     }
 }
 
@@ -183,6 +204,10 @@ impl<'tree> Iterator for SourceTreeIterator<'tree> {
         pos = pos + 1;
         if pos < (node.children.len() as isize) {
             self.0.push_back((node, pos));
+        }
+
+        if !ptr.children.is_empty() {
+            self.0.push_back((ptr, 0));
         }
 
         return Some(ptr);
@@ -292,6 +317,13 @@ struct TreeModel {
     pub truncated: bool,
 }
 
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum TreeOrError {
+    Tree(TreeModel),
+    Error { message: String },
+}
+
 impl<'path> TreeModel {
     /// Obtains a tree first recursively, and then non-recursively if truncated.
     async fn get_tree(path: &GithubBranchPath<'path>) -> Result<TreeModel, Error> {
@@ -355,7 +387,7 @@ impl<'path> TreeModel {
     ) -> Result<TreeModel, Error> {
         let url = path.to_tree_url();
 
-        let client = HttpRequest::client()?;
+        let client = HttpRequest::client(&None)?;
         let request = match recursive {
             true => client.get(url).query(&[("recursive", true)]),
             false => client.get(url),
@@ -368,8 +400,10 @@ impl<'path> TreeModel {
         let response = client.execute(request).await?;
         let body = response.text().await?;
 
-        let result = serde_json::from_str(&body)?;
-
-        Ok(result)
+        let result = serde_json::from_str::<TreeOrError>(&body)?;
+        match result {
+            TreeOrError::Error { message } => Err(Error::GithubError(message)),
+            TreeOrError::Tree(t) => Ok(t),
+        }
     }
 }

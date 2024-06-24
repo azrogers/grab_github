@@ -6,6 +6,7 @@ pub enum Error {
     DeserializationError(Arc<serde_json::Error>),
     IOError(Arc<std::io::Error>),
     Base64Error(Arc<base64::DecodeError>),
+    GithubError(String),
     Other(String),
 }
 
