@@ -19,7 +19,8 @@ let tree = SourceTree::get(&repo).await?;
 // Find a file in the directory tree with the given path.
 let file = tree.resolve_blob(Path::new("build.gradle")).unwrap();
 
-// Personal access token will automatically be filled from environment variable `GITHUB_ACCESS_TOKEN` if set.
+// GitHub personal access token will be filled from environment 
+// variable `GITHUB_ACCESS_TOKEN` if set.
 let config = DownloadConfigNoReporting::new(Path::new("output/data"));
 
 // Download this file into the output directory.

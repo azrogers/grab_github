@@ -13,23 +13,40 @@ use std::{
 
 use crate::{request::HttpRequest, Error, Filter, GithubBranchPath, SourceTree, TreeEntryType};
 
-/// An event that's occured involving a single download.
+/// An event involving a single download.
 #[derive(Debug)]
 pub enum DownloadEvent<'p> {
-    DownloadStarted { path: &'p str },
-    DownloadCompleted { path: &'p str },
-    DownloadFailed { path: &'p str, error: Error },
+    /// A file has begun downloading.
+    DownloadStarted {
+        /// The path of the file relative to the root of the repository.
+        path: &'p str,
+    },
+    /// A file has been downloaded successfully.
+    DownloadCompleted {
+        /// The path of the file relative to the root of the repository.
+        path: &'p str,
+    },
+    /// A file has encountered an error and has failed to download.
+    DownloadFailed {
+        /// The path of the file relative to the root of the repository.
+        path: &'p str,
+        /// The [Error] that was encountered while attempting to download the file.
+        error: Error,
+    },
 }
 
 /// Implement this trait to receive events on the status of each upload.
 pub trait DownloadReporter: Sync {
-    fn on_event<'p>(&'p self, _event: DownloadEvent<'p>) -> () {}
+    /// Called with events for each download's status.
+    fn on_event<'p>(&'p self, event: DownloadEvent<'p>) -> ();
 }
 
-/// An empty download reporter that does nothing
+/// An empty download reporter that does nothing.
 pub struct NullDownloadReporter {}
 
-impl DownloadReporter for NullDownloadReporter {}
+impl DownloadReporter for NullDownloadReporter {
+    fn on_event<'p>(&'p self, _event: DownloadEvent<'p>) -> () {}
+}
 
 const DEFAULT_MAX_DOWNLOADS: usize = 5;
 
@@ -92,6 +109,7 @@ where
 /// A convenience type for a download config with no reporter.
 pub type DownloadConfigNoReporting<'download> = DownloadConfig<'download, NullDownloadReporter>;
 
+/// Contains methods for downloading a [SourceTree] into a directory of files.
 pub struct Downloader {}
 
 impl<'p> Downloader {

@@ -13,10 +13,10 @@ pub struct Filter<'src> {
 impl<'src> Filter<'src> {
     /// Creates a new [Filter] from the given lists of `included` and `excluded` glob strings.
     ///
-    /// If both `included` and `excluded` globs are specified, files will only be included if they match both sets.
-    /// If only `included` is specified and `excluded` is empty, `included` acts as a whitelist.
-    /// If only `excluded` is specified and `included` is empty, `excluded` acts as a blacklist.
-    /// If both are empty, the filter passes for all paths (and you should call [all](Filter::all) instead).
+    /// - If both `included` and `excluded` globs are specified, files will only be included if they match both sets.
+    /// - If only `included` is specified and `excluded` is empty, `included` acts as a whitelist.
+    /// - If only `excluded` is specified and `included` is empty, `excluded` acts as a blacklist.
+    /// - If both are empty, the filter passes for all paths (and you should call [all](Filter::all) instead).
     pub fn new<Iter, Str>(included: Iter, excluded: Iter) -> Filter<'src>
     where
         Iter: IntoIterator<Item = Str>,

@@ -14,7 +14,9 @@ use crate::{request::HttpRequest, Error};
 /// The fields should complete the URL `https://github.com/{user}/{repo}/tree/{branch}`.
 #[derive(Debug)]
 pub struct GithubBranchPath<'g> {
+    /// The GitHub username of the repository owner.
     pub user: &'g str,
+    /// The repository name.
     pub repo: &'g str,
     /// The branch or SHA1 hash of the commit tree to fetch.
     pub branch: &'g str,
@@ -44,23 +46,38 @@ impl<'g> GithubBranchPath<'g> {
     }
 }
 
+/// The type of a single entry in a [SourceTree].
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub enum TreeEntryType {
+    /// A blob (file) entry.
     #[serde(rename = "blob")]
     Blob,
+    /// A tree (directory) entry.
     #[serde(rename = "tree")]
     Tree,
 }
 
 /// A tree representing the directories and files of a GitHub repo.
-#[derive(Deserialize, Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SourceTree {
+    /// The path of the file relative to the root of the repository.
     pub path: PathBuf,
+    /// The unix permissions mode of the file, in numeric notation.  
     pub mode: String,
+    /// The SHA1 hash identifying this blob or tree.
+    ///
+    /// This is NOT the same as the sha1 hash of the contents.
     pub sha: String,
+    /// The type of the entry.
     pub entry_type: TreeEntryType,
+    /// The size of the entry in bytes, or 0 for blob entries.
     pub size: u32,
+    /// The API URL to call to get more information on this object.
+    ///
+    /// - For [TreeEntryType::Blob], this is the URL of the `Get a blob` API call for this entry.
+    /// - For [TreeEntryType::Tree], this is the URL of the `Get a tree` API call for this entry.
     pub url: String,
+    /// The children of this entry, if any.
     pub children: Vec<SourceTree>,
 }
 
@@ -103,22 +120,22 @@ impl SourceTree {
     }
 
     /// Walks the tree to find a tree (directory) at the given path, if any.
-    /// Equivalent to [resolve](SourceTree::resolve_tree) with `find_blob` as `Some(false)`.
+    /// Equivalent to [resolve](SourceTree::resolve) with `find_blob` as `Some(false)`.
     pub fn resolve_tree(&self, path: &Path) -> Option<&SourceTree> {
         self.resolve(path, Some(false))
     }
 
     /// Walks the tree to find a node at the given path, if any.
-    /// Equivalent to [resolve](SourceTree::resolve_tree) with `find_blob` as `None`.
+    /// Equivalent to [resolve](SourceTree::resolve) with `find_blob` as `None`.
     pub fn resolve_any(&self, path: &Path) -> Option<&SourceTree> {
         self.resolve(path, Some(false))
     }
 
     /// Walks the tree to find an entry at the given path, if any.
     ///
-    /// If `find_blob` is `Some(true)`, only blob entries will be returned.
-    /// If `find_blob` is `Some(false)`, only tree entries will be returned.
-    /// If `find_blob` is `None`, the first type of entry found will be returned.
+    /// - If `find_blob` is `Some(true)`, only blob entries will be returned.
+    /// - If `find_blob` is `Some(false)`, only tree entries will be returned.
+    /// - If `find_blob` is `None`, the first type of entry found will be returned.
     pub fn resolve(&self, path: &Path, find_blob: Option<bool>) -> Option<&SourceTree> {
         // we reverse the path because going parent->parent->parent is easier
         let components: Vec<Component> = path.components().into_iter().collect();
@@ -157,7 +174,7 @@ impl SourceTree {
         SourceTreeIterator(list)
     }
 
-    /// Creates a new [SourceTree] from this tree, only including child nodes where `f` returns true.`
+    /// Creates a new [SourceTree] from this tree, only including child nodes where `f` returns true.
     pub fn prune(&self, predicate: for<'a> fn(&'a &SourceTree) -> bool) -> SourceTree {
         let new_children: Vec<SourceTree> = self
             .children
